@@ -22,7 +22,7 @@ contract CompoundScript is Script {
 
         CErc20 cERC20 =  new CErc20();
 
-        // Comptroller實作
+        // Comptroller實�??
         Comptroller comptroller = new Comptroller();
 
         JumpRateModelV2 jumpRateModel = new JumpRateModelV2(
@@ -32,6 +32,8 @@ contract CompoundScript is Script {
             1,
             owner
         );
+
+        // test pr
 
         CErc20Delegate cERC20Delegate = new CErc20Delegate();
 
