@@ -33,7 +33,7 @@ contract CompoundScript is Script {
         // Comptroller proxy
         Unitroller unitroller = new Unitroller();
 
-        // Comptroller實作
+        // Comptroller實�??
         Comptroller comptroller = new Comptroller();
         unitroller._setPendingImplementation(address(comptroller));
         comptroller._become(unitroller);
@@ -53,6 +53,8 @@ contract CompoundScript is Script {
             payable(msg.sender));
 
         console.log(cERC20.admin());
+
+        // test pr
 
         CErc20Delegate cERC20Delegate = new CErc20Delegate();
         // cERC20Delegate._becomeImplementation(abi.encode(cERC20));
