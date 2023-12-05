@@ -37,10 +37,6 @@ contract CompoundHW2Script is Script {
         Comptroller comptroller = new Comptroller();
         unitroller._setPendingImplementation(address(comptroller));
         comptroller._become(unitroller);
-        comptroller._setPriceOracle(oracle);
-        
-        comptroller._setCloseFactor(5e17);
-        comptroller._setLiquidationIncentive(1.08 * 1e18);
 
         WhitePaperInterestRateModel whiteInterest = new WhitePaperInterestRateModel(0,0);
 
@@ -76,15 +72,6 @@ contract CompoundHW2Script is Script {
             payable(msg.sender), // admin
             address(cERC20DelegateB), // implementation
             new bytes(0));
-
-        // set the token price
-        oracle.setUnderlyingPrice(CToken(address(cTokenA)),1 * 1e18);
-        oracle.setUnderlyingPrice(CToken(address(cTokenB)),100 * 1e18);
-
-        // support the cToken to market list.
-        comptroller._supportMarket(CToken(address(cTokenA)));
-        comptroller._supportMarket(CToken(address(cTokenB)));
-        comptroller._setCollateralFactor(CToken(address(cTokenB)),5 * 1e17);
 
         vm.stopBroadcast();
     }
