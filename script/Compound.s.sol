@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import {console} from "../lib/forge-std/src/console.sol";
 import {Comp} from "compound-protocol/contracts/Governance/Comp.sol";
@@ -14,10 +14,13 @@ import {Unitroller} from "compound-protocol/contracts/Unitroller.sol";
 import {CErc20Delegate} from "compound-protocol/contracts/CErc20Delegate.sol";
 import {WhitePaperInterestRateModel} from "compound-protocol/contracts/WhitePaperInterestRateModel.sol";
 import {CTokenStorage} from "compound-protocol/contracts/CTokenInterfaces.sol";
+import "compound-protocol/contracts/CToken.sol";
+import "../constracts/JimToken.sol";
 
 contract CompoundScript is Script {
 
-    address underlying = 0xFB76C72C0B19b07739A52355B8500374514a17C5;
+    address underlying = 0xa98BA49fA513E23AAb3f051109D4b6107e886a40; // -> JT
+    // address underlying;
 
     function setUp() public {}
 
@@ -33,7 +36,7 @@ contract CompoundScript is Script {
         // Comptroller proxy
         Unitroller unitroller = new Unitroller();
 
-        // Comptrollerå¯¦ä??
+        // Comptroller
         Comptroller comptroller = new Comptroller();
         unitroller._setPendingImplementation(address(comptroller));
         comptroller._become(unitroller);
@@ -41,20 +44,19 @@ contract CompoundScript is Script {
 
         WhitePaperInterestRateModel whiteInterest = new WhitePaperInterestRateModel(0,0);
 
-        // CErc20 cERC20 =  new CErc20();
-        CErc20Immutable cERC20 = new CErc20Immutable(
-            underlying,
-            Comptroller(address(unitroller)),
-            InterestRateModel(whiteInterest),
-            1 * 10 ** 18,
-            "compound JB Token.",
-            "cJBT",
-            18,
-            payable(msg.sender));
+        JimToken JT =  new JimToken();
+        underlying = address(JT);
+        // CErc20Immutable cERC20 = new CErc20Immutable(
+        //     underlying,
+        //     Comptroller(address(unitroller)),
+        //     InterestRateModel(whiteInterest),
+        //     1e18,
+        //     "compound JB Token.",
+        //     "cJBT",
+        //     18,
+        //     payable(msg.sender));
 
-        console.log(cERC20.admin());
-
-        // test pr
+        // console.log(EIP20Interface(underlying).totalSupply());
 
         CErc20Delegate cERC20Delegate = new CErc20Delegate();
         // cERC20Delegate._becomeImplementation(abi.encode(cERC20));
@@ -65,8 +67,8 @@ contract CompoundScript is Script {
             Comptroller(address(unitroller)),
             InterestRateModel(whiteInterest),
             1e18,
-            "compound JB Token.",
-            "cJBT",
+            "compound Jim Token.",
+            "cJT",
             18, // decimals_
             payable(msg.sender), // admin
             address(cERC20Delegate), // implementation
