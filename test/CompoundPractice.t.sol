@@ -76,26 +76,95 @@ contract CompoundPracticeTest is Test,CompoundInitSetUp {
 
     vm.startPrank(user1);
     TokenB.approve(address(cTokenB),100 * 10 ** TokenB.decimals());
-    cTokenB.mint(1 * 10 ** TokenB.decimals());
+    cTokenB.mint(100 * 10 ** TokenB.decimals());
 
     Comptroller(address(unitrollerAB)).enterMarkets(tokens);
-    cTokenA.borrow(50);
+    cTokenA.borrow(50* 10 ** TokenA.decimals());
     vm.stopPrank();
   }
 
   function test_alter_collateral_factor_Liquidated() public {
     test_borrow_after_repay();
 
-    // update the TokenB price.
+    console2.log("<<user1 account liquidity before change collateral factor>>");
+    (,uint liquidity,uint shortfall) = Comptroller(address(unitrollerAB)).getAccountLiquidity(user1);
+    console2.log("user1 liquidity:",liquidity);
+    console2.log("user1 shortfall:",shortfall);
+
+    // get collateral factor of TokenB
+    (,uint collateralFactorMantissa,) =  Comptroller(address(unitrollerAB)).markets(address(cTokenB));
+    console2.log("collateral factor:",collateralFactorMantissa / 1e16,"%");
+
+    vm.startPrank(admin);
+    Comptroller(address(unitrollerAB))._setCollateralFactor(CToken(address(cTokenB)),1 * 1e15);
+    vm.stopPrank();
+
+    console2.log("<<user1 account liquidity After change collateral factor>>");
+    (,uint liquidityAfter,uint shortfallAfter) = Comptroller(address(unitrollerAB)).getAccountLiquidity(user1);
+    console2.log("user1 liquidity:",liquidityAfter);
+    console2.log("user1 shortfall:",shortfallAfter);
+
+    (,uint collateralFactorMantissaAfter,) =  Comptroller(address(unitrollerAB)).markets(address(cTokenB));
+    console2.log("collateral factor:",collateralFactorMantissaAfter / 1e16,"%");
+    // console2.log("collateral factor test:",closeFactorMantissa / 1e16,"%");
+
+    vm.startPrank(user2);
     uint closeFactorMantissa = Comptroller(address(unitrollerAB)).closeFactorMantissa();
-    // uint borrowBalance = cTokenA.repayBalanceCurrent(user1);
-    Comptroller(address(unitrollerAB))._setCollateralFactor(CToken(address(cTokenB)),5 * 1e17);
+    uint borowBalance = cTokenA.borrowBalanceCurrent(user1);
+    uint repayAmount = borowBalance * closeFactorMantissa / 1e18;
+
+    console2.log("close Factory:",closeFactorMantissa / 1e16,"%");
+    console2.log("repayAmount:",repayAmount / 10 ** TokenA.decimals());
+
+    TokenA.approve(address(cTokenA), repayAmount);
+    (uint err) = cTokenA.liquidateBorrow(user1, repayAmount, cTokenB);
+    require(err ==0,"liquidate failed");
+
+    console2.log("Liquidation Incentive cTokenB amount:",cTokenB.balanceOf(user2));
+
+    vm.stopPrank();
   }
 
   function test_alter_oracle_BTokenPrice_Liquidated() public {
     test_borrow_after_repay();
 
+    console2.log("<<user1 account liquidity before change collateral factor>>");
+    (,uint liquidity,uint shortfall) = Comptroller(address(unitrollerAB)).getAccountLiquidity(user1);
+    console2.log("user1 liquidity:",liquidity);
+    console2.log("user1 shortfall:",shortfall);
+
+    // get collateral factor of TokenB
+    (,uint collateralFactorMantissa,) =  Comptroller(address(unitrollerAB)).markets(address(cTokenB));
+    console2.log("collateral factor:",collateralFactorMantissa / 1e16,"%");
+
+    vm.startPrank(admin);
     // update the TokenB price.
-    oracle.setUnderlyingPrice(CToken(address(cTokenB)),100 * 1e18);
+    oracle.setUnderlyingPrice(CToken(address(cTokenB)),1e17);
+    vm.stopPrank();
+
+    console2.log("<<user1 account liquidity After change collateral factor>>");
+    (,uint liquidityAfter,uint shortfallAfter) = Comptroller(address(unitrollerAB)).getAccountLiquidity(user1);
+    console2.log("user1 liquidity:",liquidityAfter);
+    console2.log("user1 shortfall:",shortfallAfter);
+
+    (,uint collateralFactorMantissaAfter,) =  Comptroller(address(unitrollerAB)).markets(address(cTokenB));
+    console2.log("collateral factor:",collateralFactorMantissaAfter / 1e16,"%");
+
+    vm.startPrank(user2);
+    uint closeFactorMantissa = Comptroller(address(unitrollerAB)).closeFactorMantissa();
+    uint borowBalance = cTokenA.borrowBalanceCurrent(user1);
+    uint repayAmount = borowBalance * closeFactorMantissa / 1e18;
+
+    console2.log("close Factory:",closeFactorMantissa / 1e16,"%");
+    console2.log("repayAmount:",repayAmount / 10 ** TokenA.decimals());
+    console2.log("repayAmount:",repayAmount);
+
+    TokenA.approve(address(cTokenA), repayAmount);
+    (uint err) = cTokenA.liquidateBorrow(user1, repayAmount / 10 ** TokenA.decimals(), cTokenB);
+    require(err ==0,"liquidate failed");
+
+    console2.log("Liquidation Incentive cTokenB amount:",cTokenB.balanceOf(user2));
+
+    vm.stopPrank();  
   }
 }
