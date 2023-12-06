@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { EIP20Interface } from "compound-protocol/contracts/EIP20Interface.sol";
-import { CErc20 } from "compound-protocol/contracts/CErc20.sol";
 import "forge-std/Test.sol";
 import "test/helper/CompoundInitSetUp.sol";
+import { EIP20Interface } from "compound-protocol/contracts/EIP20Interface.sol";
+import { CErc20 } from "compound-protocol/contracts/CErc20.sol";
 import {CToken} from "compound-protocol/contracts/CToken.sol";
 import {Comptroller} from "compound-protocol/contracts/Comptroller.sol";
 import {Unitroller} from "compound-protocol/contracts/Unitroller.sol";
