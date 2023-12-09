@@ -77,7 +77,7 @@ contract CompoundPracticeTestHW3 is Test {
     tokens[1] = address(cUNI);
 
     Comptroller(address(unitroller)).enterMarkets(tokens);
-
+    console2.log("user1 before USDC:",TokenA_USDC.balanceOf(user1));
     cUSDC.borrow((2500 * 10 ** TokenA_USDC.decimals()));
     console2.log("user1 USDC:",TokenA_USDC.balanceOf(user1));
     vm.stopPrank();
@@ -99,16 +99,20 @@ contract CompoundPracticeTestHW3 is Test {
 
     FlashParam memory arg = FlashParam(address(TokenB_UNI),address(TokenA_USDC),repayAmount,user2,user1);
 
-    uint256 initialBalanceA = 1000 * 10 ** TokenA_USDC.decimals();
-    deal(address(TokenA_USDC), user2, initialBalanceA);
+    // uint256 initialBalanceA = 1000 * 10 ** TokenA_USDC.decimals();
+    // deal(address(TokenA_USDC), user2, initialBalanceA);
     // cUSDC.mint(initialBalanceA);
 
     console2.log("TokenA_USDC User2 USDC:",TokenA_USDC.balanceOf(user2));
     console2.log("User2 cUNI:",cUNI.balanceOf(user2));
 
+    console2.log("Oracle cUNI:",oracle.getUnderlyingPrice(CToken(address(cUNI))));
+    console2.log("Oracle cUSDC:",oracle.getUnderlyingPrice(CToken(address(cUSDC))));
+
     TokenA_USDC.approve(address(cUSDC), 1000 * 10 ** TokenA_USDC.decimals());
     (uint err) = cUSDC.liquidateBorrow(user1, repayAmount, cUNI);
-    console2.log("User2 cUNI after:",cUNI.balanceOf(user2));
+    console2.log("liquidateBorrow Error:",err);
+    // console2.log("User2 cUNI after:",cUNI.balanceOf(user2));
 
     // 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e -> PoolAddressesProvider
     // SimpleFlashLoan flashLoan = new SimpleFlashLoan(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
