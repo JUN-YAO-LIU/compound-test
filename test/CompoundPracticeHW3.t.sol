@@ -8,8 +8,12 @@ import "test/helper/CompoundInitSetUp.sol";
 import { CToken } from "compound-protocol/contracts/CToken.sol";
 import { Comptroller } from "compound-protocol/contracts/Comptroller.sol";
 import { Unitroller } from "compound-protocol/contracts/Unitroller.sol";
+import { CErc20Delegator } from "compound-protocol/contracts/CErc20Delegator.sol";
+import { CErc20Delegate } from "compound-protocol/contracts/CErc20Delegate.sol";
 import { Pool } from "../lib/aave-address-book/lib/aave-v3-core/contracts/protocol/pool/Pool.sol";
 import { SimpleFlashLoan } from "../constracts/SimpleFlashLoan.sol";
+import {InterestRateModel} from "compound-protocol/contracts/InterestRateModel.sol";
+import {WhitePaperInterestRateModel} from "compound-protocol/contracts/WhitePaperInterestRateModel.sol";
 
 contract CompoundPracticeTestHW3 is Test {
   EIP20Interface public JT = EIP20Interface(0xbd098C26334CA2E2690d14D59E8D4d623241D7F1);
@@ -19,10 +23,14 @@ contract CompoundPracticeTestHW3 is Test {
   address public user1 = makeAddr("User1");
   address public user2 = makeAddr("User2");
 
-  CErc20 public cUSDC = CErc20(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
-  CErc20 public cUNI = CErc20(0x35A18000230DA775CAc24873d00Ff85BccdeD550);
+  // CErc20 public cUSDC = CErc20(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
+  // CErc20 public cUNI = CErc20(0x35A18000230DA775CAc24873d00Ff85BccdeD550);
 
-  Unitroller public unitroller = Unitroller(payable(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B));
+  CErc20Delegator public cUSDC;
+  CErc20Delegator public cUNI;
+
+  // Unitroller public unitroller = Unitroller(payable(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B));
+  Unitroller public unitroller;
 
   address public admin = 0x6d903f6003cca6255D85CcA4D3B5E5146dC33925;
   SimplePriceOracle oracle;
@@ -44,41 +52,96 @@ contract CompoundPracticeTestHW3 is Test {
     vm.selectFork(forkId);
    
     vm.startPrank(admin);
+    // Comptroller proxy
+    unitroller = new Unitroller();
+
+    // Comptroller
+    Comptroller comptroller = new Comptroller();
+    unitroller._setPendingImplementation(address(comptroller));
+    comptroller._become(unitroller);
+
+    WhitePaperInterestRateModel model = new WhitePaperInterestRateModel(0, 0);
+    CErc20Delegate cERC20DelegateA = new CErc20Delegate();
+    cUSDC = new CErc20Delegator(
+          address(TokenA_USDC),
+          Comptroller(address(unitroller)),
+          InterestRateModel(model),
+          1e6,
+          "compound USDC",
+          "cUSDC",
+          18,
+          payable(admin),
+          address(cERC20DelegateA),
+          new bytes(0));
+
+    CErc20Delegate cERC20DelegateB = new CErc20Delegate();
+    cUNI = new CErc20Delegator(
+          address(TokenB_UNI),
+          Comptroller(address(unitroller)),
+          InterestRateModel(model),
+          1e18,
+          "compound UNI",
+          "cUNI",
+          18,
+          payable(admin),
+          address(cERC20DelegateB),
+          new bytes(0));
+
+    // error MintComptrollerRejection(9) MARKET_NOT_LISTED
+    Comptroller(address(unitroller))._supportMarket(CErc20(address(cUSDC)));
+    Comptroller(address(unitroller))._supportMarket(CErc20(address(cUNI)));
+
     Comptroller(address(unitroller))._setCloseFactor(5e17);
     Comptroller(address(unitroller))._setLiquidationIncentive(1.08 * 1e18);
 
     oracle = new SimplePriceOracle();
     Comptroller(address(unitroller))._setPriceOracle(oracle);
-    oracle.setUnderlyingPrice(CToken(address(cUSDC)),1 * 1e18);
+
+    // 36 - 6
+    oracle.setUnderlyingPrice(CToken(address(cUSDC)),1 * 1e30);
+
+    // 36 - 18
     oracle.setUnderlyingPrice(CToken(address(cUNI)),5 * 1e18);
-    Comptroller(address(unitroller))._setCollateralFactor(CToken(address(cUNI)),25 * 1e17);
+    Comptroller(address(unitroller))._setCollateralFactor(CToken(address(cUNI)),5e17);
+
+    // admin supply the liquidity
+    deal(address(TokenA_USDC), admin, 1000 * 1e18);
+    TokenA_USDC.approve(address(cUSDC), 1000 * 1e18);
+    cUSDC.mint(1000 * 1e18);
+    // address[] memory tokensAdmin = new address[](2);
+    // tokensAdmin[0] = address(cUSDC);
+    // tokensAdmin[1] = address(cUNI);
+    // Comptroller(address(unitroller)).enterMarkets(tokensAdmin);
     vm.stopPrank();
 
     vm.label(address(pool), "FlashPool");
     vm.label(address(TokenB_UNI), "TokenB_UNI");
+    vm.label(address(TokenA_USDC), "TokenA_USDC");
     vm.label(user1, "User1");
     vm.label(user2, "User2");
+    vm.label(address(unitroller), "Comptroller");
   }
 
   function test_AAVE_Flashloan_Liquidate() public {
     vm.startPrank(user1);
 
-    uint256 initialBalanceB = 1000 * 10 ** TokenB_UNI.decimals();
+    uint256 initialBalanceB = 1000 * 1e18;
     deal(address(TokenB_UNI), user1, initialBalanceB);
 
     console2.log("user1 UNI:",TokenB_UNI.balanceOf(user1));
-    TokenB_UNI.approve(address(cUNI), 1000 * 10 ** TokenB_UNI.decimals());
+    TokenB_UNI.approve(address(cUNI), 1000 * 1e18);
     cUNI.mint(1000 * 1e18);
 
     console2.log("user1 cUNI:",cUNI.balanceOf(user1));
 
     address[] memory tokens = new address[](2);
-    tokens[0] = address(cUSDC);
-    tokens[1] = address(cUNI);
-
+    tokens[0] = address(cUNI);
     Comptroller(address(unitroller)).enterMarkets(tokens);
+
     console2.log("user1 before USDC:",TokenA_USDC.balanceOf(user1));
-    cUSDC.borrow((2500 * 10 ** TokenA_USDC.decimals()));
+
+    //  BorrowComptrollerRejection(4) INSUFFICIENT_LIQUIDITY 
+    cUSDC.borrow(2500 * 1e6);
     console2.log("user1 USDC:",TokenA_USDC.balanceOf(user1));
     vm.stopPrank();
 
@@ -87,7 +150,7 @@ contract CompoundPracticeTestHW3 is Test {
     vm.stopPrank();
 
     vm.startPrank(user2);
-    Comptroller(address(unitroller)).enterMarkets(tokens);
+    // Comptroller(address(unitroller)).enterMarkets(tokens);
     uint closeFactorMantissa = Comptroller(address(unitroller)).closeFactorMantissa();
     uint borowBalance = cUSDC.borrowBalanceCurrent(user1);
     uint borowBalance2 = cUSDC.borrowBalanceStored(user1);
@@ -103,13 +166,15 @@ contract CompoundPracticeTestHW3 is Test {
     // deal(address(TokenA_USDC), user2, initialBalanceA);
     // cUSDC.mint(initialBalanceA);
 
+    deal(address(TokenA_USDC), user2, 5000 * 10 ** TokenA_USDC.decimals());
     console2.log("TokenA_USDC User2 USDC:",TokenA_USDC.balanceOf(user2));
     console2.log("User2 cUNI:",cUNI.balanceOf(user2));
 
     console2.log("Oracle cUNI:",oracle.getUnderlyingPrice(CToken(address(cUNI))));
     console2.log("Oracle cUSDC:",oracle.getUnderlyingPrice(CToken(address(cUSDC))));
 
-    TokenA_USDC.approve(address(cUSDC), 1000 * 10 ** TokenA_USDC.decimals());
+    
+    TokenA_USDC.approve(address(cUSDC), 5000 * 10 ** TokenA_USDC.decimals());
     (uint err) = cUSDC.liquidateBorrow(user1, repayAmount, cUNI);
     console2.log("liquidateBorrow Error:",err);
     // console2.log("User2 cUNI after:",cUNI.balanceOf(user2));
