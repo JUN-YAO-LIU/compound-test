@@ -38,8 +38,8 @@ contract CompoundPracticeTestHW3 is Test {
   Pool pool = Pool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
 
   struct FlashParam{
-        address tokenIn;
-        address tokenOut;
+        CErc20Delegator cUNI;
+        CErc20Delegator cUSDC;
         uint repayAmount;
         address to;
         address liquidatedUser;
@@ -160,41 +160,32 @@ contract CompoundPracticeTestHW3 is Test {
     console2.log("borowBalance2:",borowBalance2);
     console2.log("repayAmount:",repayAmount);
 
-    FlashParam memory arg = FlashParam(address(TokenB_UNI),address(TokenA_USDC),repayAmount,user2,user1);
-
     // uint256 initialBalanceA = 1000 * 10 ** TokenA_USDC.decimals();
     // deal(address(TokenA_USDC), user2, initialBalanceA);
     // cUSDC.mint(initialBalanceA);
 
-    deal(address(TokenA_USDC), user2, 5000 * 10 ** TokenA_USDC.decimals());
-    console2.log("TokenA_USDC User2 USDC:",TokenA_USDC.balanceOf(user2));
-    console2.log("User2 cUNI:",cUNI.balanceOf(user2));
+    // deal(address(TokenA_USDC), user2, 5000 * 10 ** TokenA_USDC.decimals());
+    // console2.log("TokenA_USDC User2 USDC:",TokenA_USDC.balanceOf(user2));
+    // console2.log("User2 cUNI:",cUNI.balanceOf(user2));
 
-    console2.log("Oracle cUNI:",oracle.getUnderlyingPrice(CToken(address(cUNI))));
-    console2.log("Oracle cUSDC:",oracle.getUnderlyingPrice(CToken(address(cUSDC))));
+    // console2.log("Oracle cUNI:",oracle.getUnderlyingPrice(CToken(address(cUNI))));
+    // console2.log("Oracle cUSDC:",oracle.getUnderlyingPrice(CToken(address(cUSDC))));
 
     
-    TokenA_USDC.approve(address(cUSDC), 5000 * 10 ** TokenA_USDC.decimals());
-    (uint err) = cUSDC.liquidateBorrow(user1, repayAmount, cUNI);
-    console2.log("liquidateBorrow Error:",err);
+    // TokenA_USDC.approve(address(cUSDC), 5000 * 10 ** TokenA_USDC.decimals());
+    // (uint err) = cUSDC.liquidateBorrow(user1, repayAmount, cUNI);
+    // console2.log("liquidateBorrow Error:",err);
     // console2.log("User2 cUNI after:",cUNI.balanceOf(user2));
 
     // 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e -> PoolAddressesProvider
-    // SimpleFlashLoan flashLoan = new SimpleFlashLoan(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
+    SimpleFlashLoan flashLoan = new SimpleFlashLoan(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
     // TokenB_UNI.transfer(address(flashLoan), 1e18);
 
     // console2.log("flashLoan UNI:",TokenB_UNI.balanceOf(address(flashLoan)));
-    // flashLoan.fn_RequestFlashLoan(abi.encode(arg));
+    console2.log("user2 USDC before Liquidate:",TokenA_USDC.balanceOf(user2));
+    FlashParam memory arg = FlashParam(cUNI,cUSDC,repayAmount,user2,user1);
+    flashLoan.fn_RequestFlashLoan(abi.encode(arg));
 
-    // console2.log("user2 USDC:",TokenA_USDC.balanceOf(user2));
-
-    //TokenA_USDC.approve(address(cUSDC), repayAmount);
-    // (uint err) = cUSDC.liquidateBorrow(user1, repayAmount / 10 ** TokenA_USDC.decimals(), cUNI);
-    // require(err ==0,"liquidate failed");
-    
-    // console2.log("<<user1 account liquidity After change collateral factor>>");
-    // (,uint liquidityAfter,uint shortfallAfter) = Comptroller(address(unitroller)).getAccountLiquidity(user1);
-    // console2.log("user1 liquidity:",liquidityAfter);
-    // console2.log("user1 shortfall:",shortfallAfter);
+    console2.log("user2 USDC after Liquidate:",TokenA_USDC.balanceOf(user2));
   }
 }
