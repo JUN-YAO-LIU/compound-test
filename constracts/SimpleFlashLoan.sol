@@ -96,6 +96,5 @@ contract SimpleFlashLoan is FlashLoanSimpleReceiverBase {
 
         return true;
     }
-
     receive() external payable {}
 }
