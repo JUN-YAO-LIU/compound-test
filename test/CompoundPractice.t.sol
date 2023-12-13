@@ -139,7 +139,7 @@ contract CompoundPracticeTest is Test,CompoundInitSetUp {
 
     vm.startPrank(admin);
     // update the TokenB price.
-    oracle.setUnderlyingPrice(CToken(address(cTokenB)),1e17);
+    oracle.setUnderlyingPrice(CToken(address(cTokenB)),5 * 1e17);
     vm.stopPrank();
 
     console2.log("<<user1 account liquidity After change collateral factor>>");
@@ -156,11 +156,10 @@ contract CompoundPracticeTest is Test,CompoundInitSetUp {
     uint repayAmount = borowBalance * closeFactorMantissa / 1e18;
 
     console2.log("close Factory:",closeFactorMantissa / 1e16,"%");
-    console2.log("repayAmount:",repayAmount / 10 ** TokenA.decimals());
     console2.log("repayAmount:",repayAmount);
 
     TokenA.approve(address(cTokenA), repayAmount);
-    (uint err) = cTokenA.liquidateBorrow(user1, repayAmount / 10 ** TokenA.decimals(), cTokenB);
+    (uint err) = cTokenA.liquidateBorrow(user1, repayAmount, cTokenB);
     require(err ==0,"liquidate failed");
 
     console2.log("Liquidation Incentive cTokenB amount:",cTokenB.balanceOf(user2));
