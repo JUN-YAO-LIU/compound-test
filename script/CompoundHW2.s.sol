@@ -15,20 +15,18 @@ import {CErc20Delegate} from "compound-protocol/contracts/CErc20Delegate.sol";
 import {WhitePaperInterestRateModel} from "compound-protocol/contracts/WhitePaperInterestRateModel.sol";
 import {CTokenStorage} from "compound-protocol/contracts/CTokenInterfaces.sol";
 import "compound-protocol/contracts/CToken.sol";
-import "../constracts/JimToken.sol";
+import "../constracts/ERC20Token.sol";
 
-contract CompoundScript is Script {
+contract CompoundHW2Script is Script {
 
-    address underlying; // -> JT
-    // address underlying;
+    ERC20Token tokenA;
+    ERC20Token tokenB;
 
     function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
-        // Comp comp = new Comp(owner);
 
         SimplePriceOracle oracle = new SimplePriceOracle();
 
@@ -39,38 +37,40 @@ contract CompoundScript is Script {
         Comptroller comptroller = new Comptroller();
         unitroller._setPendingImplementation(address(comptroller));
         comptroller._become(unitroller);
-        comptroller._setPriceOracle(oracle);
 
         WhitePaperInterestRateModel whiteInterest = new WhitePaperInterestRateModel(0,0);
 
-        JimToken JT =  new JimToken();
-        underlying = address(JT);
-        // CErc20Immutable cERC20 = new CErc20Immutable(
-        //     underlying,
-        //     Comptroller(address(unitroller)),
-        //     InterestRateModel(whiteInterest),
-        //     1e18,
-        //     "compound JB Token.",
-        //     "cJBT",
-        //     18,
-        //     payable(msg.sender));
+        ERC20Token TokenA =  new ERC20Token("TokenA","TA");
+        tokenA = TokenA;
 
-        // console.log(EIP20Interface(underlying).totalSupply());
+        ERC20Token TokenB =  new ERC20Token("TokenB","TB");
+        tokenB = TokenB;
 
-        CErc20Delegate cERC20Delegate = new CErc20Delegate();
-        // cERC20Delegate._becomeImplementation(abi.encode(cERC20));
-        // console.log(cERC20Delegate.admin());
+        CErc20Delegate cERC20DelegateA = new CErc20Delegate();
+        CErc20Delegate cERC20DelegateB = new CErc20Delegate();
         
-        CErc20Delegator cERC20Delegator = new CErc20Delegator(
-            underlying, // underlying_ JB Token
+        CErc20Delegator cTokenA = new CErc20Delegator(
+            address(tokenA), // underlying_ JB Token
             Comptroller(address(unitroller)),
             InterestRateModel(whiteInterest),
             1e18,
-            "compound Jim Token.",
-            "cJT",
+            "cTokenA",
+            "TA",
             18, // decimals_
             payable(msg.sender), // admin
-            address(cERC20Delegate), // implementation
+            address(cERC20DelegateA), // implementation
+            new bytes(0));
+
+        CErc20Delegator cTokenB = new CErc20Delegator(
+            address(tokenB), // underlying_ JB Token
+            Comptroller(address(unitroller)),
+            InterestRateModel(whiteInterest),
+            1e18,
+            "cTokenB",
+            "TB",
+            18, // decimals_
+            payable(msg.sender), // admin
+            address(cERC20DelegateB), // implementation
             new bytes(0));
 
         vm.stopBroadcast();
