@@ -160,23 +160,6 @@ contract CompoundPracticeTestHW3 is Test {
     console2.log("borowBalance2:",borowBalance2);
     console2.log("repayAmount:",repayAmount);
 
-    // uint256 initialBalanceA = 1000 * 10 ** TokenA_USDC.decimals();
-    // deal(address(TokenA_USDC), user2, initialBalanceA);
-    // cUSDC.mint(initialBalanceA);
-
-    // deal(address(TokenA_USDC), user2, 5000 * 10 ** TokenA_USDC.decimals());
-    // console2.log("TokenA_USDC User2 USDC:",TokenA_USDC.balanceOf(user2));
-    // console2.log("User2 cUNI:",cUNI.balanceOf(user2));
-
-    // console2.log("Oracle cUNI:",oracle.getUnderlyingPrice(CToken(address(cUNI))));
-    // console2.log("Oracle cUSDC:",oracle.getUnderlyingPrice(CToken(address(cUSDC))));
-
-    
-    // TokenA_USDC.approve(address(cUSDC), 5000 * 10 ** TokenA_USDC.decimals());
-    // (uint err) = cUSDC.liquidateBorrow(user1, repayAmount, cUNI);
-    // console2.log("liquidateBorrow Error:",err);
-    // console2.log("User2 cUNI after:",cUNI.balanceOf(user2));
-
     // 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e -> PoolAddressesProvider
     SimpleFlashLoan flashLoan = new SimpleFlashLoan(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
     // TokenB_UNI.transfer(address(flashLoan), 1e18);
@@ -187,5 +170,7 @@ contract CompoundPracticeTestHW3 is Test {
     flashLoan.fn_RequestFlashLoan(abi.encode(arg));
 
     console2.log("user2 USDC after Liquidate:",TokenA_USDC.balanceOf(user2));
+    assertTrue(TokenA_USDC.balanceOf(user2)> 63 * 1e6,"not get than 63 USDC");
+    vm.stopPrank();
   }
 }
